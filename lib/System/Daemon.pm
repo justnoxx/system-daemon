@@ -8,7 +8,7 @@ use Carp;
 
 use System::Daemon::Utils;
 
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 our $AUTHOR = 'justnoxx';
 our $ABSTRACT = "Swiss-knife for daemonization";
 
@@ -105,6 +105,13 @@ sub ok_pid {
 }
 
 
+sub cleanup {
+    my ($self) = @_;
+
+    return $self->finish();
+}
+
+
 sub finish {
     my ($self) = @_;
 
@@ -115,7 +122,11 @@ sub finish {
     }
 }
 
+sub process_object {
+    my ($self) = @_;
 
+    return System::Daemon::Utils::process_object();
+}
 1;
 
 __END__
