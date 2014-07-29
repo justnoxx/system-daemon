@@ -8,11 +8,12 @@ use Carp;
 
 use System::Daemon::Utils;
 
-our $VERSION = 0.02;
+our $VERSION = 0.03;
 our $AUTHOR = 'justnoxx';
 our $ABSTRACT = "Swiss-knife for daemonization";
 
 our $DEBUG = 0;
+
 
 sub new {
     my ($class, %params) = @_;
@@ -83,9 +84,6 @@ sub ok_pid {
 
     $pidfile ||= $self->{daemon_data}->{pidfile};
 
-    # нет pid как параметра, а значит, что проверка
-    # смысла не имеет
-
     return 1 unless $pidfile;
 
     unless (System::Daemon::Utils::pid_init($self->{daemon_data}->{pidfile})) {
@@ -122,11 +120,81 @@ sub finish {
     }
 }
 
+
 sub process_object {
     my ($self) = @_;
 
     return System::Daemon::Utils::process_object();
 }
+
+
 1;
 
 __END__
+
+=head1 NAME
+
+System::Daemon
+
+=head1 DESCRIPTION
+
+Swiss-knife for daemonization
+
+=head1 SYNOPSIS
+
+See liittle example:
+
+    use System::Daemon;
+    
+    $0 = 'my_daemon_process_name';
+
+    my $daemon = System::Daemon->new(
+        user            =>  'username',
+        group           =>  'groupname',
+        pidfile         =>  'path/to/pidfile',
+        name_pattern    =>  'my_daemon_process_name'
+    );
+    $daemon->daemonize();
+
+    your_cool_code();
+
+    $daemon->exit(0);
+
+=head1 METHODS
+
+=over
+
+=item new(%params)
+
+Constructor, returns System::Daemon object. Available parameters:
+
+    user            =>   desired username
+    group           =>   desired groupname
+    pidfile         =>   '/path/to/pidfile'
+    name_pattern    =>  name pattern to look if ps output,
+
+
+=item daemonize
+
+Call it to become a daemon.
+
+=item exit($exit_code)
+
+An exit wrapper, also, it performing cleanup before exit.
+
+=item finish
+
+Performing cleanup. At now cleanup is just pid file removing.
+
+=item cleanup
+
+Same as finish.
+
+
+=item process_object
+
+Returns System::Process object of daemon instance.
+
+=back
+
+=cut
