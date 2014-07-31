@@ -8,7 +8,7 @@ use Carp;
 
 use System::Daemon::Utils;
 
-our $VERSION = 0.03;
+our $VERSION = 0.04;
 our $AUTHOR = 'justnoxx';
 our $ABSTRACT = "Swiss-knife for daemonization";
 
@@ -32,9 +32,16 @@ sub new {
         $self->{daemon_data}->{pidfile} = $params{pidfile};
     }
 
+    if ($params{procname}) {
+        $self->{daemon_data}->{procname} = $params{procname};
+        $params{name_pattern} ||= $params{procname};
+    }
+
     if ($params{name_pattern}) {
         $self->{daemon_data}->{name_pattern} = $params{name_pattern};
     }
+
+
     $self->{daemon_data}->{rdy} = 1;
     bless $self, $class;
     return $self;
@@ -65,6 +72,9 @@ sub daemonize {
         System::Daemon::Utils::write_pid($dd->{pidfile});
     }
 
+    if ($dd->{procname}) {
+        $0 = $dd->{procname};
+    }
     return 1;
 }
 
@@ -168,10 +178,11 @@ See liittle example:
 
 Constructor, returns System::Daemon object. Available parameters:
 
-    user            =>   desired username
-    group           =>   desired groupname
-    pidfile         =>   '/path/to/pidfile'
+    user            =>  desired username
+    group           =>  desired groupname
+    pidfile         =>  '/path/to/pidfile'
     name_pattern    =>  name pattern to look if ps output,
+    procname        =>  process name for ps output
 
 
 =item daemonize
