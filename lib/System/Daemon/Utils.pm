@@ -36,6 +36,59 @@ sub apply_rights {
     return 1;
 }
 
+sub validate_user_and_group {
+    my %params = @_;
+    
+    my $err = 0;
+
+    if (!$params{user} && !$params{group}) {
+        croak "Missing user and group param, can't validate.";
+    }
+    my ($user, $group) = ($params{user}, $params{group});
+    if ($user) {
+        my $uid = validate_user($user);
+        unless ($uid) {
+            carp "Wrong username";
+            $err++;
+        }
+    }
+
+    if ($group) {
+        my $gid = validate_group($group);
+        unless ($gid) {
+            carp "Wrong groupname";
+            $err++;
+        }
+    }
+
+    if ($err) {
+        return 0;
+    }
+
+    return 1;
+}
+
+sub validate_group {
+    my $group = shift;
+    
+    my $gid = getgrnam($group);
+    unless ($gid) {
+        return -1;
+    }
+    return $gid;
+}
+
+
+sub validate_user {
+    my $user = shift;
+    
+    my $uid = getgrnam($user);
+    unless ($uid) {
+        return -1;
+    }
+    return $uid;
+}
+
 
 sub daemon {
     fork and exit;
@@ -43,11 +96,7 @@ sub daemon {
     fork and exit;
     umask 0;
     chdir '/';
-    unless ($DEBUG) {
-        open STDIN , '<', '/dev/null';
-        open STDOUT, '>', '/dev/null';
-        open STDERR, '>', '/dev/null';
-    }
+    return 1;
 }
 
 
@@ -158,6 +207,12 @@ sub validate_pid {
     return 0;
 }
 
+
+sub suppress {
+    open STDIN , '<', '/dev/null';
+    open STDOUT, '>', '/dev/null';
+    open STDERR, '>', '/dev/null';
+}
 1;
 
 __END__

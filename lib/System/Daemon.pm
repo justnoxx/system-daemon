@@ -8,7 +8,7 @@ use Carp;
 
 use System::Daemon::Utils;
 
-our $VERSION = 0.04;
+our $VERSION = 0.05;
 our $AUTHOR = 'justnoxx';
 our $ABSTRACT = "Swiss-knife for daemonization";
 
@@ -56,12 +56,7 @@ sub daemonize {
 
     my $process_object = System::Daemon::Utils::process_object();
 
-    if ($dd->{user} || $dd->{group}) {
-        System::Daemon::Utils::apply_rights(
-            user    =>  $dd->{user},
-            group   =>  $dd->{group}
-        );
-    }
+    
 
     # wrapper context
     System::Daemon::Utils::daemon();
@@ -71,10 +66,19 @@ sub daemonize {
         croak "Can't overwrite pid file of my alive instance" unless $self->ok_pid();
         System::Daemon::Utils::write_pid($dd->{pidfile});
     }
+    
+    if ($dd->{user} || $dd->{group}) {
+        System::Daemon::Utils::apply_rights(
+            user    =>  $dd->{user},
+            group   =>  $dd->{group}
+        );
+    }
 
     if ($dd->{procname}) {
         $0 = $dd->{procname};
     }
+
+    System::Daemon::Utils::suppress();
     return 1;
 }
 
