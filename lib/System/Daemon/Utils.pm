@@ -6,7 +6,7 @@ use warnings;
 use Carp;
 use POSIX;
 use Data::Dumper;
-use Fcntl ':flock';
+
 
 use System::Process;
 
@@ -114,7 +114,7 @@ sub pid_init {
             carp "Can't create pid $pid: $!";
             return 0;
         };
-        
+
 
         return 1;
     }
