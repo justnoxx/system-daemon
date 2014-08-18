@@ -6,6 +6,7 @@ use warnings;
 use Carp;
 use POSIX;
 use Data::Dumper;
+use Fcntl ':flock';
 
 use System::Process;
 
@@ -108,10 +109,13 @@ sub pid_init {
     if (!-e $pid) {
         # файла нет
         # пробуем его создать
+        local *PID;
         open PID, '>', $pid or do {
             carp "Can't create pid $pid: $!";
             return 0;
         };
+        
+
         return 1;
     }
 
@@ -121,15 +125,23 @@ sub pid_init {
 
 
 sub write_pid {
-    my ($pidfile, $pid) = @_;
+    my ($pidfile, $pid, %owner) = @_;
 
     $pid ||= $$;
 
     croak "No pidfile" unless $pidfile;
+    local *PID;
 
     open PID, '>', $pidfile;
     print PID $pid;
     close PID;
+
+    if ($owner{user} || $owner{group}) {
+        my ($uid, $gid) = (0+ getpwnam($owner{user}), 0+ getgrnam($owner{group}));
+        chown $uid, $gid, $pidfile or croak "Can't chown $owner{user}:$owner{group}";
+    }
+
+    return 1;
 }
 
 
@@ -153,6 +165,21 @@ sub read_pid {
     return 0 unless $res;
 
     return $pid;
+}
+
+
+sub is_alive2 {
+    my ($pid, $pid_fh) = @_;
+
+    $pid ||= $$;
+
+    my $sp = System::Process::pidinfo(
+        pid  =>  $pid,
+    );
+    return 0 unless $sp;
+    return 0 unless $sp->cankill();
+
+
 }
 
 
@@ -213,6 +240,8 @@ sub suppress {
     open STDOUT, '>', '/dev/null';
     open STDERR, '>', '/dev/null';
 }
+
+
 1;
 
 __END__

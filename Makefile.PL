@@ -8,7 +8,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
     NAME             => 'System::Daemon',
-    AUTHOR           => 'Shamatrin D.',
+    AUTHOR           => 'Shamatrin Dmitriy',
     VERSION_FROM     => 'lib/System/Daemon.pm',
     # ABSTRACT_FROM    => 'lib/System/InitD.pm',
     LICENSE          => 'perl',

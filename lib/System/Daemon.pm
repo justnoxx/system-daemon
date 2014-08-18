@@ -14,11 +14,13 @@ our $ABSTRACT = "Swiss-knife for daemonization";
 
 our $DEBUG = 0;
 
+our $LOCK;
 
 sub new {
     my ($class, %params) = @_;
 
     my $self = {};
+    $self->{daemon_data}->{daemonize} = 1;
 
     if ($params{user}) {
         $self->{daemon_data}->{user} = $params{user};
@@ -41,30 +43,46 @@ sub new {
         $self->{daemon_data}->{name_pattern} = $params{name_pattern};
     }
 
+    if (exists $params{daemonize}) {
+        $self->{daemon_data}->{daemonize} = $params{daemonize};
+    }
 
-    $self->{daemon_data}->{rdy} = 1;
     bless $self, $class;
     return $self;
 }
 
+
 sub daemonize {
     my $self = shift;
 
-    croak "Not ready" unless $self->{daemon_data}->{rdy};
+    unless ($self->{daemon_data}->{daemonize}) {
+        carp "Daemonization disabled";
+        return 1;
+    }
 
     my $dd = $self->{daemon_data};
 
     my $process_object = System::Daemon::Utils::process_object();
 
-    
-
     # wrapper context
     System::Daemon::Utils::daemon();
-
+    
+    # let's validate user and group
+    if ($dd->{user} || $dd->{group}) {
+        System::Daemon::Utils::validate_user_and_group(
+            user    =>  $dd->{user},
+            group   =>  $dd->{group},
+        ) or do {
+            croak "Bad user or group";
+        };
+    }
     # daemon context
     if ($dd->{pidfile}) {
         croak "Can't overwrite pid file of my alive instance" unless $self->ok_pid();
-        System::Daemon::Utils::write_pid($dd->{pidfile});
+        System::Daemon::Utils::write_pid($dd->{pidfile}, undef,
+            user    =>  $dd->{user},
+            group   =>  $dd->{group}
+        );
     }
     
     if ($dd->{user} || $dd->{group}) {
@@ -109,9 +127,9 @@ sub ok_pid {
         return 1;
     }
 
-    if (System::Daemon::Utils::is_alive($pid, $self->{daemon_data}->{name_pattern})) {
-        return 0;
-    }
+    # if (System::Daemon::Utils::is_alive($pid, $self->{daemon_data}->{name_pattern})) {
+    #     return 0;
+    # }
 
     return 1;
 }

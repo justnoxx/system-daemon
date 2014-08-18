@@ -33,7 +33,7 @@ my %test_params = (
 my $start_pid = $$;
 my $daemon = System::Daemon->new(%test_params);
 eval {$daemon->daemonize(); 1;} or do {
-    BAIL_OUT("Can't daemonize: @$ !");
+    BAIL_OUT("Can't daemonize: $@ !");
 };
 
 my $sp = $daemon->process_object();
