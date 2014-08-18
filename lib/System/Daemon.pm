@@ -5,7 +5,7 @@ use warnings;
 
 use POSIX;
 use Carp;
-
+use Fcntl ':flock';
 use System::Daemon::Utils;
 
 our $VERSION = 0.05;
@@ -96,6 +96,14 @@ sub daemonize {
         $0 = $dd->{procname};
     }
 
+    if ($dd->{pidfile}) {
+        open $LOCK, $dd->{pidfile};
+        my $got_lock = flock($LOCK, LOCK_EX | LOCK_NB);
+        unless ($got_lock) {
+            warn "Can't get lock";
+            exit 1;
+        }
+    }
     System::Daemon::Utils::suppress();
     return 1;
 }
@@ -126,10 +134,6 @@ sub ok_pid {
     unless ($pid = System::Daemon::Utils::read_pid($pidfile)) {
         return 1;
     }
-
-    # if (System::Daemon::Utils::is_alive($pid, $self->{daemon_data}->{name_pattern})) {
-    #     return 0;
-    # }
 
     return 1;
 }
