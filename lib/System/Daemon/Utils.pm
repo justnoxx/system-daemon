@@ -37,6 +37,7 @@ sub apply_rights {
     return 1;
 }
 
+
 sub validate_user_and_group {
     my %params = @_;
     
@@ -47,7 +48,7 @@ sub validate_user_and_group {
     }
     my ($user, $group) = ($params{user}, $params{group});
     if ($user) {
-        my $uid = validate_user($user);
+        my $uid = getpwnam($user);
         unless ($uid) {
             carp "Wrong username";
             $err++;
@@ -55,7 +56,7 @@ sub validate_user_and_group {
     }
 
     if ($group) {
-        my $gid = validate_group($group);
+        my $gid = getgrnam($group);
         unless ($gid) {
             carp "Wrong groupname";
             $err++;
@@ -67,27 +68,6 @@ sub validate_user_and_group {
     }
 
     return 1;
-}
-
-sub validate_group {
-    my $group = shift;
-    
-    my $gid = getgrnam($group);
-    unless ($gid) {
-        return -1;
-    }
-    return $gid;
-}
-
-
-sub validate_user {
-    my $user = shift;
-    
-    my $uid = getgrnam($user);
-    unless ($uid) {
-        return -1;
-    }
-    return $uid;
 }
 
 
@@ -137,8 +117,11 @@ sub write_pid {
     close PID;
 
     if ($owner{user} || $owner{group}) {
-        my ($uid, $gid) = (0+ getpwnam($owner{user}), 0+ getgrnam($owner{group}));
-        chown $uid, $gid, $pidfile or croak "Can't chown $owner{user}:$owner{group}";
+        my $uid = getpwnam($owner{user});
+        my $gid = getgrnam($owner{group});
+
+        chown $uid, $gid, $pidfile or 
+            croak "Can't chown $owner{user}:$owner{group}";
     }
 
     return 1;

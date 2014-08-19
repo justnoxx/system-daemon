@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 no warnings qw/once/;
-use Cwd;
 use POSIX;
 use Data::Dumper;
 
@@ -22,7 +21,8 @@ eval {
 
 $System::Daemon::Utils::DEBUG = 1;
 
-my $dir = getcwd() . '/test_daemon.pid';
+my $dir = getcwd();
+$dir .= '/test_daemon.pid';
 
 print "Dir: ", $dir, "\n";
 
