@@ -218,6 +218,26 @@ sub validate_pid {
 }
 
 
+sub make_sandbox {
+    my ($daemon_data) = @_;
+    
+    croak "Can't make sandbox without any data." unless $daemon_data->{pid_path};
+
+    if (-e $daemon_data->{pid_path}) {
+        return 1;
+    }
+
+    mkdir $daemon_data->{pid_path};
+    
+    if ($daemon_data->{user} || $daemon_data->{group}) {
+        my $uid = getpwnam($daemon_data->{user});
+        my $gid = getgrnam($daemon_data->{group});
+        chown $uid, $gid, $daemon_data->{pid_path};
+    }
+    return 1;
+}
+
+
 sub suppress {
     open STDIN , '<', '/dev/null';
     open STDOUT, '>', '/dev/null';

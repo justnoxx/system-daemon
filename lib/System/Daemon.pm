@@ -8,7 +8,7 @@ use Carp;
 use Fcntl ':flock';
 use System::Daemon::Utils;
 
-our $VERSION = 0.05;
+our $VERSION = 0.07;
 our $AUTHOR = 'justnoxx';
 our $ABSTRACT = "Swiss-knife for daemonization";
 
@@ -29,9 +29,26 @@ sub new {
     if ($params{group}) {
         $self->{daemon_data}->{group} = $params{group};
     }
-
+    
+    if ($params{pid_path}) {
+        $self->{daemon_data}->{pid_path} = $params{pid_path};
+        if ($params{pid_path} =~ m/^default$/is) {
+            $self->{daemon_data}->{pid_path} = '/var/run/system-daemon-pids/';
+        }
+        $self->{daemon_data}->{pid_path} =~ s/\/\s*$//;
+    }
     if ($params{pidfile}) {
+        if ($params{pid_path} && $params{pidfile} =~ m/\//s) {
+            
+            my $temp = $params{pidfile};
+            $temp =~ s|^.+\/||is;
+            croak "If pid_path is enabled pidfile must be relative. Try $temp instead of $params{pidfile}";
+        }
         $self->{daemon_data}->{pidfile} = $params{pidfile};
+        if ($self->{daemon_data}->{pid_path}) {
+            $self->{daemon_data}->{pidfile} =
+                $self->{daemon_data}->{pid_path} . '/' . $self->{daemon_data}->{pidfile};
+        }
     }
 
     if ($params{procname}) {
@@ -46,6 +63,16 @@ sub new {
     if (exists $params{daemonize}) {
         $self->{daemon_data}->{daemonize} = $params{daemonize};
     }
+    
+    if ($params{cleanup_on_destroy}) {
+        $self->{daemon_data}->{cleanup_on_destroy} = 1;
+    }
+        #*{System::Daemon::DESTROY} = sub {
+            #my $self = shift;
+            
+            #$self->cleanup();
+        #};
+    #}
 
     bless $self, $class;
     return $self;
@@ -59,7 +86,7 @@ sub daemonize {
         carp "Daemonization disabled";
         return 1;
     }
-
+    
     my $dd = $self->{daemon_data};
 
     my $process_object = System::Daemon::Utils::process_object();
@@ -76,9 +103,20 @@ sub daemonize {
             croak "Bad user or group";
         };
     }
+    
+    System::Daemon::Utils::make_sandbox($dd) if $dd->{pid_path};
     # daemon context
     if ($dd->{pidfile}) {
         croak "Can't overwrite pid file of my alive instance" unless $self->ok_pid();
+        if ($dd->{pidfile}) {
+            open $LOCK, $dd->{pidfile};
+            my $got_lock = flock($LOCK, LOCK_EX | LOCK_NB);
+            unless ($got_lock) {
+                warn "Can't get lock\n";
+                exit 1;
+            }
+        }
+
         System::Daemon::Utils::write_pid($dd->{pidfile}, undef,
             user    =>  $dd->{user},
             group   =>  $dd->{group}
@@ -96,14 +134,13 @@ sub daemonize {
         $0 = $dd->{procname};
     }
 
-    if ($dd->{pidfile}) {
-        open $LOCK, $dd->{pidfile};
-        my $got_lock = flock($LOCK, LOCK_EX | LOCK_NB);
-        unless ($got_lock) {
-            warn "Can't get lock";
-            exit 1;
-        }
+    if ($dd->{cleanup_on_destroy}) {
+        *{System::Daemon::DESTROY} = sub {
+            my $obj = shift;
+            $obj->cleanup();
+        };
     }
+
     System::Daemon::Utils::suppress();
     return 1;
 }
@@ -164,6 +201,13 @@ sub process_object {
 }
 
 
+#sub DESTROY {
+#    my ($self) = @_;
+#
+#    $self->finish();
+#}
+
+
 1;
 
 __END__
@@ -178,7 +222,7 @@ Swiss-knife for daemonization
 
 =head1 SYNOPSIS
 
-See liittle example:
+See little example:
 
     use System::Daemon;
     
@@ -188,7 +232,7 @@ See liittle example:
         user            =>  'username',
         group           =>  'groupname',
         pidfile         =>  'path/to/pidfile',
-        name_pattern    =>  'my_daemon_process_name'
+        daemonize       =>  0,
     );
     $daemon->daemonize();
 
@@ -209,6 +253,8 @@ Constructor, returns System::Daemon object. Available parameters:
     pidfile         =>  '/path/to/pidfile'
     name_pattern    =>  name pattern to look if ps output,
     procname        =>  process name for ps output
+    pid_path        =>  path of directory which will contain pid files.
+        if used, pidfile path must be relative.
 
 
 =item daemonize
