@@ -218,7 +218,7 @@ sub validate_pid_path {
     if (-e $path) {
         # path is not a directory
         if (!-d $path) {
-            return 0;
+            croak "Path '$path' exists and not a directory.";
         }
         # path exists and a directory
         return 1;
@@ -228,7 +228,7 @@ sub validate_pid_path {
         return 1;
     }
 
-    return 0;
+    croak "Path '$path' does not exists. Can't write PID.";
 
 }
 
@@ -255,7 +255,7 @@ sub make_sandbox {
         return 1;
     }
 
-    mkdir $path or croak "Can't mkdir: $!, check path";
+    mkdir $path or croak "Can't 'mkdir $path' Error: $!";
     
     if ($daemon_data->{user} || $daemon_data->{group}) {
         my $uid = getpwnam($daemon_data->{user});

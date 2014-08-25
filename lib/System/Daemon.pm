@@ -85,9 +85,7 @@ sub daemonize {
     }
 
     if ($dd->{pidfile}) {
-        System::Daemon::Utils::validate_pid_path($dd->{pidfile}, $dd->{mkdir}) or do {
-            croak "Pid path validation failed";
-        };
+        System::Daemon::Utils::validate_pid_path($dd->{pidfile}, $dd->{mkdir});
     }
     System::Daemon::Utils::make_sandbox($dd) if $dd->{mkdir};
     # daemon context
