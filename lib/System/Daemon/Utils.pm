@@ -6,7 +6,7 @@ use warnings;
 use Carp;
 use POSIX;
 use Data::Dumper;
-
+use File::Basename;
 
 use System::Process;
 
@@ -207,6 +207,32 @@ sub process_object {
 }
 
 
+sub validate_pid_path {
+    my ($pidfile, $mkdir) = @_;
+
+    croak unless $pidfile;
+
+    my ($filename, $path) = fileparse ($pidfile);
+
+    # path exists
+    if (-e $path) {
+        # path is not a directory
+        if (!-d $path) {
+            return 0;
+        }
+        # path exists and a directory
+        return 1;
+    }
+
+    if ($mkdir) {
+        return 1;
+    }
+
+    return 0;
+
+}
+
+
 sub validate_pid {
     my ($pid) = @_;
 
@@ -221,18 +247,20 @@ sub validate_pid {
 sub make_sandbox {
     my ($daemon_data) = @_;
     
-    croak "Can't make sandbox without any data." unless $daemon_data->{pid_path};
+    croak "Can't make sandbox without any data." unless $daemon_data->{pidfile};
 
-    if (-e $daemon_data->{pid_path}) {
+    my ($pidfile, $path) = fileparse($daemon_data->{pidfile});
+
+    if (-e $path) {
         return 1;
     }
 
-    mkdir $daemon_data->{pid_path};
+    mkdir $path or croak "Can't mkdir: $!, check path";
     
     if ($daemon_data->{user} || $daemon_data->{group}) {
         my $uid = getpwnam($daemon_data->{user});
         my $gid = getgrnam($daemon_data->{group});
-        chown $uid, $gid, $daemon_data->{pid_path};
+        chown $uid, $gid, $path;
     }
     return 1;
 }

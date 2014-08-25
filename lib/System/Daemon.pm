@@ -8,7 +8,7 @@ use Carp;
 use Fcntl ':flock';
 use System::Daemon::Utils;
 
-our $VERSION = 0.07;
+our $VERSION = 0.08;
 our $AUTHOR = 'justnoxx';
 our $ABSTRACT = "Swiss-knife for daemonization";
 
@@ -30,27 +30,13 @@ sub new {
         $self->{daemon_data}->{group} = $params{group};
     }
     
-    if ($params{pid_path}) {
-        $self->{daemon_data}->{pid_path} = $params{pid_path};
-        if ($params{pid_path} =~ m/^default$/is) {
-            $self->{daemon_data}->{pid_path} = '/var/run/system-daemon-pids/';
-        }
-        $self->{daemon_data}->{pid_path} =~ s/\/\s*$//;
-    }
     if ($params{pidfile}) {
-        if ($params{pid_path} && $params{pidfile} =~ m/\//s) {
-            
-            my $temp = $params{pidfile};
-            $temp =~ s|^.+\/||is;
-            croak "If pid_path is enabled pidfile must be relative. Try $temp instead of $params{pidfile}";
-        }
         $self->{daemon_data}->{pidfile} = $params{pidfile};
-        if ($self->{daemon_data}->{pid_path}) {
-            $self->{daemon_data}->{pidfile} =
-                $self->{daemon_data}->{pid_path} . '/' . $self->{daemon_data}->{pidfile};
-        }
     }
 
+    if ($params{mkdir}) {
+        $self->{daemon_data}->{mkdir} = 1;
+    }
     if ($params{procname}) {
         $self->{daemon_data}->{procname} = $params{procname};
         $params{name_pattern} ||= $params{procname};
@@ -67,12 +53,6 @@ sub new {
     if ($params{cleanup_on_destroy}) {
         $self->{daemon_data}->{cleanup_on_destroy} = 1;
     }
-        #*{System::Daemon::DESTROY} = sub {
-            #my $self = shift;
-            
-            #$self->cleanup();
-        #};
-    #}
 
     bless $self, $class;
     return $self;
@@ -103,8 +83,13 @@ sub daemonize {
             croak "Bad user or group";
         };
     }
-    
-    System::Daemon::Utils::make_sandbox($dd) if $dd->{pid_path};
+
+    if ($dd->{pidfile}) {
+        System::Daemon::Utils::validate_pid_path($dd->{pidfile}, $dd->{mkdir}) or do {
+            croak "Pid path validation failed";
+        };
+    }
+    System::Daemon::Utils::make_sandbox($dd) if $dd->{mkdir};
     # daemon context
     if ($dd->{pidfile}) {
         croak "Can't overwrite pid file of my alive instance" unless $self->ok_pid();
@@ -248,13 +233,14 @@ See little example:
 
 Constructor, returns System::Daemon object. Available parameters:
 
-    user            =>  desired username
-    group           =>  desired groupname
-    pidfile         =>  '/path/to/pidfile'
+    user            =>  desired_username,
+    group           =>  desired_groupname,
+    pidfile         =>  '/path/to/pidfile',
     name_pattern    =>  name pattern to look if ps output,
-    procname        =>  process name for ps output
-    pid_path        =>  path of directory which will contain pid files.
-        if used, pidfile path must be relative.
+    procname        =>  process name for ps output,
+    mkdir           =>  tries to create directory for pid files,
+    daemonize       =>  if not true, will not daemonize, for debug reasons,
+    procname        =>  after daemonize $0 will be updated to desired name,
 
 
 =item daemonize
