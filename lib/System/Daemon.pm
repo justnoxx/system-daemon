@@ -8,7 +8,7 @@ use Carp;
 use Fcntl ':flock';
 use System::Daemon::Utils;
 
-our $VERSION = 0.08;
+our $VERSION = 0.09;
 our $AUTHOR = 'justnoxx';
 our $ABSTRACT = "Swiss-knife for daemonization";
 
@@ -37,15 +37,11 @@ sub new {
     if ($params{mkdir}) {
         $self->{daemon_data}->{mkdir} = 1;
     }
+
     if ($params{procname}) {
         $self->{daemon_data}->{procname} = $params{procname};
-        $params{name_pattern} ||= $params{procname};
     }
-
-    if ($params{name_pattern}) {
-        $self->{daemon_data}->{name_pattern} = $params{name_pattern};
-    }
-
+    
     if (exists $params{daemonize}) {
         $self->{daemon_data}->{daemonize} = $params{daemonize};
     }
@@ -183,14 +179,6 @@ sub process_object {
     return System::Daemon::Utils::process_object();
 }
 
-
-#sub DESTROY {
-#    my ($self) = @_;
-#
-#    $self->finish();
-#}
-
-
 1;
 
 __END__
@@ -234,7 +222,6 @@ Constructor, returns System::Daemon object. Available parameters:
     user            =>  desired_username,
     group           =>  desired_groupname,
     pidfile         =>  '/path/to/pidfile',
-    name_pattern    =>  name pattern to look if ps output,
     procname        =>  process name for ps output,
     mkdir           =>  tries to create directory for pid files,
     daemonize       =>  if not true, will not daemonize, for debug reasons,
@@ -265,3 +252,4 @@ Returns System::Process object of daemon instance.
 =back
 
 =cut
+

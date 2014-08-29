@@ -87,8 +87,7 @@ sub pid_init {
     croak "Can't init nothing" unless $pid;
 
     if (!-e $pid) {
-        # файла нет
-        # пробуем его создать
+        # file does not exists, let's try to create
         local *PID;
         open PID, '>', $pid or do {
             carp "Can't create pid $pid: $!";
@@ -99,7 +98,7 @@ sub pid_init {
         return 1;
     }
 
-    # проверять нечего, оно ок
+    # Everything is ok, nothing to check
     return 1;
 }
 
@@ -148,45 +147,6 @@ sub read_pid {
     return 0 unless $res;
 
     return $pid;
-}
-
-
-sub is_alive2 {
-    my ($pid, $pid_fh) = @_;
-
-    $pid ||= $$;
-
-    my $sp = System::Process::pidinfo(
-        pid  =>  $pid,
-    );
-    return 0 unless $sp;
-    return 0 unless $sp->cankill();
-
-
-}
-
-
-sub is_alive {
-    my ($pid, $pattern) = @_;
-
-    $pid ||= $$;
-
-    my $sp = System::Process::pidinfo(
-        pid  =>  $pid,
-    );
-    return 0 unless $sp;
-    return 0 unless $sp->cankill();
-
-    # раз мы можем попробовать убить процесс, с большой вероятностью
-    # он существует
-    if ($pattern) {
-        my $command = $sp->command();
-        if ($command =~ m/$pattern/s) {
-            return 1;
-        }
-        return 0;
-    }
-    return 1;
 }
 
 
