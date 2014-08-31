@@ -1,4 +1,3 @@
-eg/simple_daemon.pl
 lib/System/Daemon.pm
 lib/System/Daemon/Utils.pm
 Makefile.PL
