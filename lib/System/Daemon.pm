@@ -8,7 +8,7 @@ use Carp;
 use Fcntl ':flock';
 use System::Daemon::Utils;
 
-our $VERSION = 0.12;
+our $VERSION = 0.13;
 our $AUTHOR = 'justnoxx';
 our $ABSTRACT = "Swiss-knife for daemonization";
 
