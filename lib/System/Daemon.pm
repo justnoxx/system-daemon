@@ -185,7 +185,7 @@ __END__
 
 =head1 NAME
 
-System::Daemon
+System::Daemon - Swiss-knife for daemonization
 
 =head1 DESCRIPTION
 
